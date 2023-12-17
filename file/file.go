@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/vekio/fs"
 )
 
 // DefaultPerms for new file creation.
@@ -87,4 +89,24 @@ func copyFileContents(src, dst string) (err error) {
 	// Ensure all contents are written to disk
 	err = out.Sync()
 	return
+}
+
+// Exists calls fs.Exists and further confirms that the file is a file
+// and not a directory.
+func Exists(path string) (bool, error) {
+	exists, err := fs.Exists(path)
+	if err != nil {
+		return false, fmt.Errorf("error checking existence of %s: %w", path, err)
+	}
+
+	if !exists {
+		return false, nil
+	}
+
+	isDir, err := fs.IsDir(path)
+	if err != nil {
+		return false, fmt.Errorf("error checking if %s is a directory: %w", path, err)
+	}
+
+	return !isDir, nil
 }
