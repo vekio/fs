@@ -1,10 +1,12 @@
 package dir
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 
+	_fs "github.com/vekio/fs"
 	_file "github.com/vekio/fs/file"
 )
 
@@ -55,4 +57,23 @@ func Copy(src, dst string) error {
 	}
 
 	return nil
+}
+
+// Exists checks if the given dir path exists and is a directory.
+func Exists(path string) (bool, error) {
+	exists, err := _fs.Exists(path)
+	if err != nil {
+		return false, fmt.Errorf("error checking existence of %s: %w", path, err)
+	}
+
+	if !exists {
+		return false, nil
+	}
+
+	isDir, err := _fs.IsDir(path)
+	if err != nil {
+		return false, fmt.Errorf("error checking if %s is a directory: %w", path, err)
+	}
+
+	return isDir, nil
 }
