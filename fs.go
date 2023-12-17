@@ -8,8 +8,14 @@ import (
 // Default perms for new directory creation.
 var DefaultDirPerms = os.FileMode(0755)
 
+// Restricted perms for new directory creation.
+var RestrictedDirPerms = os.FileMode(0700)
+
 // Default perms for new file creation.
 var DefaultFilePerms = os.FileMode(0644)
+
+// Restricted perms for new file creation.
+var RestrictedFilePerms = os.FileMode(0600)
 
 // Create a new directory creating any new directories as well.
 func Create(path string, perms os.FileMode) error {
