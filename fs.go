@@ -3,6 +3,7 @@ package fs
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // Default perms for new directory creation.
@@ -17,9 +18,29 @@ var DefaultFilePerms = os.FileMode(0644)
 // Restricted perms for new file creation.
 var RestrictedFilePerms = os.FileMode(0600)
 
-// Create a new directory creating any new directories as well.
-func Create(path string, perms os.FileMode) error {
+// CreateDir a new directory creating any new directories as well.
+func CreateDir(path string, perms os.FileMode) error {
 	return os.MkdirAll(path, perms)
+}
+
+// CreateFile creates a new file, also creating any new directories
+// if necessary. If the file already exists it is truncated.
+func CreateFile(path string, perms os.FileMode) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), perms); err != nil {
+		return nil, err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := file.Chmod(perms); err != nil {
+		file.Close()
+		return nil, err
+	}
+
+	return file, nil
 }
 
 // Exists checks if the given path exists.

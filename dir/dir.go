@@ -25,7 +25,7 @@ func Copy(src, dst string) error {
 	}
 
 	if !exists {
-		if err := _fs.Create(dst, info.Mode()); err != nil {
+		if err := _fs.CreateDir(dst, info.Mode()); err != nil {
 			return err
 		}
 	}
