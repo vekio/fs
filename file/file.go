@@ -33,7 +33,7 @@ func Touch(path string, perms os.FileMode) error {
 	// and the empty file
 	if !exists {
 		// Create the directory (if needed) using default directory permissions
-		if err := _fs.Create(filepath.Dir(path), _fs.DefaultDirPerms); err != nil {
+		if err := _fs.CreateDir(filepath.Dir(path), _fs.DefaultDirPerms); err != nil {
 			return err
 		}
 
@@ -45,7 +45,9 @@ func Touch(path string, perms os.FileMode) error {
 		defer file.Close()
 
 		// Set the file permissions to the specified permissions
-		os.Chmod(path, perms)
+		if err := os.Chmod(path, perms); err != nil {
+			return err
+		}
 	}
 
 	return nil
