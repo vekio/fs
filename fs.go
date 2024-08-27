@@ -28,7 +28,7 @@ func CreateDir(path string, perms os.FileMode) error {
 // If the file already exists, it is truncated. The file's permissions are also set accordingly.
 func CreateFileWithDirs(path string, perms os.FileMode) (*os.File, error) {
 	// Create all necessary parent directories.
-	if err := os.MkdirAll(filepath.Dir(path), perms); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), DefaultDirPerms); err != nil {
 		return nil, fmt.Errorf("creating directories for %s failed: %w", path, err)
 	}
 
