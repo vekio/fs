@@ -43,20 +43,18 @@ func CreateFile(path string, perms os.FileMode) (*os.File, error) {
 	return file, nil
 }
 
-// Exists checks if the given path exists.
+// Exists checks if the given path exists on the filesystem.
+// It returns true if the path exists, false if the path does not exist.
+// Any other error encountered during the check (e.g., permission errors) is returned as an error.
 func Exists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err == nil {
 		return true, nil
 	}
-
-	// The error indicates that the file or directory does not exist
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) { // Check error type
 		return false, nil
 	}
-
-	// Unexpected error
-	return false, fmt.Errorf("error checking existence of %s: %w", path, err)
+	return false, fmt.Errorf("error accessing %s: %w", path, err) // Unexpected error, e.g., permission denied
 }
 
 // IsDir checks if the given path is a directory.
