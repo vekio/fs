@@ -51,10 +51,10 @@ func Exists(path string) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
-	if os.IsNotExist(err) { // Check error type
+	if os.IsNotExist(err) {
 		return false, nil
 	}
-	return false, fmt.Errorf("error accessing %s: %w", path, err) // Unexpected error, e.g., permission denied
+	return false, fmt.Errorf("error accessing %s: %w", path, err) // Unexpected error.
 }
 
 // IsDir checks if the given path is a directory.
