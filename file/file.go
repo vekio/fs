@@ -137,15 +137,15 @@ func copyFileContents(src, dst string) error {
 	return nil
 }
 
-// Exists checks if the given file path exists and is not a directory.
+// Exists checks if the given path exists and is a file (not a directory).
+// It returns true if it exists and is not a directory.
 func Exists(path string) (bool, error) {
 	exists, err := _fs.Exists(path)
 	if err != nil {
 		return false, fmt.Errorf("error checking existence of %s: %w", path, err)
 	}
-
 	if !exists {
-		return false, nil
+		return false, nil // Path does not exist.
 	}
 
 	isDir, err := _fs.IsDir(path)

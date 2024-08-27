@@ -23,21 +23,25 @@ func CreateDir(path string, perms os.FileMode) error {
 	return os.MkdirAll(path, perms)
 }
 
-// CreateFile creates a new file, also creating any new directories
-// if necessary. If the file already exists it is truncated.
-func CreateFile(path string, perms os.FileMode) (*os.File, error) {
+// CreateFileWithDirs creates a new file at the specified path, ensuring that all
+// necessary parent directories are created with the specified permissions.
+// If the file already exists, it is truncated. The file's permissions are also set accordingly.
+func CreateFileWithDirs(path string, perms os.FileMode) (*os.File, error) {
+	// Create all necessary parent directories.
 	if err := os.MkdirAll(filepath.Dir(path), perms); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating directories for %s failed: %w", path, err)
 	}
 
+	// Create or truncate the file at the specified path.
 	file, err := os.Create(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating file %s failed: %w", path, err)
 	}
 
+	// Set the permissions for the newly created file.
 	if err := file.Chmod(perms); err != nil {
-		file.Close()
-		return nil, err
+		file.Close() // Ensure the file is closed if setting permissions fails.
+		return nil, fmt.Errorf("setting permissions for %s failed: %w", path, err)
 	}
 
 	return file, nil
@@ -51,10 +55,12 @@ func Exists(path string) (bool, error) {
 	if err == nil {
 		return true, nil
 	}
-	if os.IsNotExist(err) { // Check error type
+
+	if os.IsNotExist(err) {
 		return false, nil
 	}
-	return false, fmt.Errorf("error accessing %s: %w", path, err) // Unexpected error, e.g., permission denied
+
+	return false, fmt.Errorf("error accessing %s: %w", path, err) // Unexpected error.
 }
 
 // IsDir checks if the given path is a directory.
