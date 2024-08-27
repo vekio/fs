@@ -147,9 +147,11 @@ func Exists(path string) (bool, error) {
 	if !exists {
 		return false, nil // Path does not exist.
 	}
+
 	isDir, err := _fs.IsDir(path)
 	if err != nil {
 		return false, fmt.Errorf("error checking if %s is a directory: %w", path, err)
 	}
+
 	return !isDir, nil
 }
