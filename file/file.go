@@ -4,11 +4,43 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	_fs "github.com/vekio/fs"
 )
+
+func getDefaultEditor() string {
+	editor := os.Getenv("VISUAL")
+	if editor == "" {
+		editor = os.Getenv("EDITOR")
+	}
+	if editor == "" {
+		editor = "vi" // TODO Utilizar "notepad" para Windows.
+	}
+	return editor
+}
+
+func execute(editor, filePath string) error {
+	cmd := exec.Command(editor, filePath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to execute %s: %w", editor, err)
+	}
+	return nil
+}
+
+// Edit opens the specified file in the preferred editor as defined by environment variables VISUAL or EDITOR.
+// Falls back to 'vi' as the default editor if neither environment variable is set.
+func Edit(filePath string) error {
+	editor := getDefaultEditor()
+	return execute(editor, filePath)
+}
 
 // Touch updates the access and modification times of a file at the
 // specified path. If the file does not exist, it creates an empty file
