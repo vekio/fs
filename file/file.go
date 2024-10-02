@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 )
 
 // Default perms for new file creation.
@@ -12,185 +13,146 @@ var DefaultFilePerms = os.FileMode(0644)
 // Restricted perms for new file creation.
 var RestrictedFilePerms = os.FileMode(0600)
 
-// Touch updates the access and modification times of a file at the
-// specified path. If the file does not exist, it creates an empty file
-// with the specified permissions.
-// func Touch(path string, perms os.FileMode) error {
-// 	// Check if the file already exists
-// 	exists, err := Exists(path)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// If the file exists, update its access and modification times
-// 	// to the current time
-// 	if exists {
-// 		now := time.Now().Local()
-// 		if err := os.Chtimes(path, now, now); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	// If the file does not exist, create the necessary directory
-// 	// and the empty file
-// 	if !exists {
-// 		// Create the directory (if needed) using default directory permissions
-// 		if err := _fs.CreateDir(filepath.Dir(path), _fs.DefaultDirPerms); err != nil {
-// 			return err
-// 		}
-
-// 		// Create the empty file
-// 		file, err := os.Create(path)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		defer file.Close()
-
-// 		// Set the file permissions to the specified permissions
-// 		if err := os.Chmod(path, perms); err != nil {
-// 			return err
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-// Copy copies a file from src to dst. If src and dst files exist, and are
-// the same, then return success. Otherise, attempt to create a hard link
-// between the two files. If that fail, copy the file contents from src to dst.
-// func Copy(src, dst string) error {
-// 	// Get information about the source file
-// 	sfi, err := os.Stat(src)
-// 	if err != nil {
-// 		return nil
-// 	}
-
-// 	// Check if the source file is a regular file
-// 	if !sfi.Mode().IsRegular() {
-// 		// Cannot copy non-regular files
-// 		// (e.g., directories, symbolic links, devices, etc.)
-// 		return fmt.Errorf("can't copy non-regular file %s (%q)",
-// 			sfi.Name(), sfi.Mode().String())
-// 	}
-
-// 	// Get information about the destination file, if it exists
-// 	exists, err := Exists(dst)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	if exists {
-// 		dfi, _ := os.Stat(dst)
-
-// 		// Check if the destination file is a regular file
-// 		if !dfi.Mode().IsRegular() {
-// 			return fmt.Errorf("non-regular destination file %s (%q)",
-// 				dfi.Name(), dfi.Mode().String())
-// 		}
-
-// 		// Check if the source and destination files are the same
-// 		if os.SameFile(sfi, dfi) {
-// 			return nil
-// 		}
-// 	}
-
-// 	// Copy the contents of the source file to the destination file
-// 	err = copyFileContents(src, dst)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
-// copies the contents of the file named src to the file named by dst.
-// The file will be created if it does not already exist. If the destination
-// file exists, all it's contents will be replaced by the contents
-// of the source file.
-// func copyFileContents(src, dst string) error {
-// 	// Open the source file for reading
-// 	in, err := os.Open(src)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer in.Close()
-
-// 	// Create the destination file for writing
-// 	out, err := os.Create(dst)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer func() {
-// 		cerr := out.Close()
-// 		if err == nil {
-// 			err = cerr
-// 		}
-// 	}()
-
-// 	// Copy the contents from the source file to the destination file
-// 	if _, err = io.Copy(out, in); err != nil {
-// 		return err
-// 	}
-
-// 	// Ensure all contents are written to disk
-// 	err = out.Sync()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
-
-// Create creates a new file and returns a file handle.
-// If the file already exists, it simply opens it with truncation.
-func Create(path string, perms os.FileMode) (*os.File, error) {
-	// Try to open the file in read/write mode, create it if it does not exist, and truncate it if it does.
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, perms)
+// AppendToFile appends content to the file at the specified path.
+// If the file does not exist, it will be created.
+func AppendToFile(path string, content []byte) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("error creating or opening file %s: %w", path, err)
+		return fmt.Errorf("error opening file %s for appending: %w", path, err)
 	}
-	return file, nil
+	defer file.Close()
+
+	_, err = file.Write(content)
+	if err != nil {
+		return fmt.Errorf("error appending content to file %s: %w", path, err)
+	}
+
+	return nil
 }
 
-// Exists checks if the given path exists and is a file (not a directory).
-func Exists(path string) (bool, error) {
+// CreateFile creates a new file or truncates an existing file.
+func CreateFile(path string, perms os.FileMode) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC, perms)
+	if err != nil {
+		return fmt.Errorf("error creating or truncating file %s: %w", path, err)
+	}
+	defer file.Close()
+
+	return nil
+}
+
+// FileExists checks if the given path exists and is a file (not a directory).
+func FileExists(path string) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return false, nil // Path does not exist, no error.
+			return false, nil // File does not exist, no error.
 		}
 		return false, fmt.Errorf("error accessing %s: %w", path, err) // Other errors accessing the path.
 	}
+
 	if info.IsDir() {
-		return false, fmt.Errorf("path is a directory and not a file")
+		return false, fmt.Errorf("the path %s is a directory, not a file", path)
 	}
-	return true, nil // The path exists and is not a directory.
+	return true, nil
 }
 
-// Edit opens the specified file in the preferred editor.
-func Edit(filePath string) error {
+// GetFileSize returns the size of the file at the specified path.
+func GetFileSize(path string) (int64, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, fmt.Errorf("error getting file info for %s: %w", path, err)
+	}
+	return info.Size(), nil
+}
+
+// WriteFileContent writes the given content to a specified file.
+// If the file does not exist, it creates it. If it exists, it truncates the content before writing.
+func WriteFileContent(path string, content []byte, perms os.FileMode) error {
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, perms)
+	if err != nil {
+		return fmt.Errorf("error creating or opening file %s: %w", path, err)
+	}
+	defer file.Close()
+
+	_, err = file.Write(content)
+	if err != nil {
+		return fmt.Errorf("error writing to file %s: %w", path, err)
+	}
+
+	return nil
+}
+
+// MoveFile moves a file from src to dst. If dst exists, it will be overwritten.
+func MoveFile(src, dst string) error {
+	err := os.Rename(src, dst)
+	if err != nil {
+		return fmt.Errorf("error moving file from %s to %s: %w", src, dst, err)
+	}
+	return nil
+}
+
+// ReadFile reads the entire content of the file at the given path.
+func ReadFile(path string) ([]byte, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file %s: %w", path, err)
+	}
+	return data, nil
+}
+
+// EditFile opens the specified file in the preferred editor.
+// It first checks if the file exists before attempting to open it.
+func EditFile(filePath string) error {
+	// Check if the file exists before editing.
+	exists, err := FileExists(filePath)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return fmt.Errorf("file %s does not exist", filePath)
+	}
+
 	editor := getDefaultEditor()
 	return executeCmd(editor, filePath)
 }
 
+// getDefaultEditor returns the user's preferred editor or a default one.
 func getDefaultEditor() string {
-	editor := os.Getenv("VISUAL")
-	if editor == "" {
-		editor = os.Getenv("EDITOR")
+	var editor string
+
+	switch runtime.GOOS {
+	case "linux", "darwin":
+		// Check for preferred editor in environment variables
+		editor = os.Getenv("VISUAL")
+		if editor == "" {
+			editor = os.Getenv("EDITOR")
+		}
+		// If neither is set, use a sensible default
+		if editor == "" {
+			editor = "vi"
+		}
+	case "windows":
+		editor = "notepad"
+	default:
+		// Default for unknown systems
+		editor = "vi"
 	}
-	if editor == "" {
-		editor = "vi" // TODO Include "notepad" for Windows.
-	}
+
 	return editor
 }
 
-func executeCmd(editor, filePath string) error {
-	cmd := exec.Command(editor, filePath)
+// executeCmd executes a command with the specified arguments.
+func executeCmd(cmdName string, args ...string) error {
+	cmd := exec.Command(cmdName, args...)
+
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("failed to execute %s: %w", editor, err)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to execute command %s with arguments %v: %w", cmdName, args, err)
 	}
+
 	return nil
 }
