@@ -10,31 +10,6 @@ import (
 	"github.com/vekio/fs/file"
 )
 
-// SyncDir synchronizes the content of src directory to dst directory.
-func SyncDir(src, dst string) error {
-	srcFiles, err := dir.ListDir(src)
-	if err != nil {
-		return fmt.Errorf("error reading source directory %s: %w", src, err)
-	}
-
-	for _, fileName := range srcFiles {
-		srcFile := filepath.Join(src, fileName)
-		dstFile := filepath.Join(dst, fileName)
-
-		fileExists, err := file.FileExists(srcFile)
-		if err != nil {
-			return fmt.Errorf("error checking file %s: %w", srcFile, err)
-		}
-		if fileExists {
-			if err := copyFileContents(srcFile, dstFile); err != nil {
-				return fmt.Errorf("error syncing file %s to %s: %w", srcFile, dstFile, err)
-			}
-		}
-	}
-
-	return nil
-}
-
 // Copy copies a file from src to dst, mimicking the behavior of the 'cp' command.
 // If the destination is a directory, the file will be copied into it.
 func Copy(src, dst string) error {

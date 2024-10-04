@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/vekio/fs/dir"
 )
 
 // TestCopyFileToFile tests copying from one file to another.
@@ -116,58 +114,5 @@ func TestCopyDestinationDirectoryNotExist(t *testing.T) {
 	err = Copy(srcFile.Name(), "/nonexistent/destination/file.txt")
 	if err == nil {
 		t.Fatalf("expected error when destination directory does not exist, but got nil")
-	}
-}
-
-// TestSyncDir tests the SyncDir function to ensure it synchronizes two directories.
-func TestSyncDir(t *testing.T) {
-	// Create two temporary directories.
-	srcDir, err := os.MkdirTemp("", "test_sync_src")
-	if err != nil {
-		t.Fatalf("failed to create source directory: %v", err)
-	}
-	defer os.RemoveAll(srcDir)
-
-	dstDir, err := os.MkdirTemp("", "test_sync_dst")
-	if err != nil {
-		t.Fatalf("failed to create destination directory: %v", err)
-	}
-	defer os.RemoveAll(dstDir)
-
-	// Create some files in the source directory.
-	files := []string{"file1.txt", "file2.txt"}
-	for _, f := range files {
-		if _, err := os.Create(filepath.Join(srcDir, f)); err != nil {
-			t.Fatalf("failed to create file %s: %v", f, err)
-		}
-	}
-
-	// Sync the source directory with the destination directory.
-	err = SyncDir(srcDir, dstDir)
-	if err != nil {
-		t.Fatalf("expected no error, but got: %v", err)
-	}
-
-	// Verify that the destination directory has the same files as the source.
-	dstFiles, err := dir.ListDir(dstDir)
-	if err != nil {
-		t.Fatalf("expected no error, but got: %v", err)
-	}
-
-	if len(dstFiles) != len(files) {
-		t.Fatalf("expected %d files, but got %d", len(files), len(dstFiles))
-	}
-
-	for _, f := range files {
-		found := false
-		for _, df := range dstFiles {
-			if f == df {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Fatalf("expected file %s to be in destination directory, but it was not", f)
-		}
 	}
 }

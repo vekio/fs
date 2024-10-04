@@ -92,6 +92,22 @@ func MoveFile(src, dst string) error {
 	return nil
 }
 
+// ListFile lists only the files in the specified path.
+func ListFile(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading directory %s: %w", path, err)
+	}
+
+	var files []string
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry.Name())
+		}
+	}
+	return files, nil
+}
+
 // ReadFile reads the entire content of the file at the given path.
 func ReadFile(path string) ([]byte, error) {
 	data, err := os.ReadFile(path)

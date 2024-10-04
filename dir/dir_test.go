@@ -96,43 +96,49 @@ func TestEnsureDir(t *testing.T) {
 	}
 }
 
-// TestListDir tests the ListDir function to ensure it lists the directory contents correctly.
+// TestListDir tests the ListDir function to ensure it lists only directories.
 func TestListDir(t *testing.T) {
 	// Create a temporary directory.
 	tmpDir, err := os.MkdirTemp("", "test_list_dir")
 	if err != nil {
 		t.Fatalf("failed to create temp directory: %v", err)
 	}
-	defer os.RemoveAll(tmpDir) // Clean up after test.
+	defer os.RemoveAll(tmpDir)
 
-	// Create some files in the directory.
-	files := []string{"file1.txt", "file2.txt", "file3.txt"}
+	// Create directories and files inside the temporary directory.
+	directories := []string{"dir1", "dir2", "dir3"}
+	for _, d := range directories {
+		if err := os.Mkdir(filepath.Join(tmpDir, d), 0755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", d, err)
+		}
+	}
+	files := []string{"file1.txt", "file2.txt"}
 	for _, f := range files {
 		if _, err := os.Create(filepath.Join(tmpDir, f)); err != nil {
 			t.Fatalf("failed to create file %s: %v", f, err)
 		}
 	}
 
-	// List the directory contents.
-	listedFiles, err := ListDir(tmpDir)
+	// Call ListDir and check the result.
+	dirs, err := ListDir(tmpDir)
 	if err != nil {
 		t.Fatalf("expected no error, but got: %v", err)
 	}
-
-	// Verify that the listed files match the created files.
-	if len(listedFiles) != len(files) {
-		t.Fatalf("expected %d files, but got %d", len(files), len(listedFiles))
+	if len(dirs) != len(directories) {
+		t.Fatalf("expected %d directories, but got %d", len(directories), len(dirs))
 	}
-	for _, f := range files {
+
+	// Verify that the correct directories were listed.
+	for _, d := range directories {
 		found := false
-		for _, lf := range listedFiles {
-			if f == lf {
+		for _, listedDir := range dirs {
+			if listedDir == d {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Fatalf("expected file %s to be listed, but it was not", f)
+			t.Fatalf("expected directory %s to be listed, but it was not", d)
 		}
 	}
 }

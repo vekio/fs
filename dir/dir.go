@@ -41,17 +41,20 @@ func EnsureDir(path string, perms os.FileMode) error {
 	return nil // The directory already exists, nothing to do.
 }
 
-// ListDir lists the files and directories in the specified directory.
+// ListDir lists only the directories in the specified path.
 func ListDir(path string) ([]string, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("error reading directory %s: %w", path, err)
 	}
-	var names []string
+
+	var dirs []string
 	for _, entry := range entries {
-		names = append(names, entry.Name())
+		if entry.IsDir() {
+			dirs = append(dirs, entry.Name())
+		}
 	}
-	return names, nil
+	return dirs, nil
 }
 
 // IsEmptyDir checks if the specified directory is empty.

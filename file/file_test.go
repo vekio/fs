@@ -254,3 +254,50 @@ func TestReadFile(t *testing.T) {
 		t.Fatalf("expected content: %s, but got: %s", string(content), string(data))
 	}
 }
+
+// TestListFile tests the ListFile function to ensure it lists only files.
+func TestListFile(t *testing.T) {
+	// Create a temporary directory.
+	tmpDir, err := os.MkdirTemp("", "test_list_file_dir")
+	if err != nil {
+		t.Fatalf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Create directories and files inside the temporary directory.
+	directories := []string{"dir1", "dir2", "dir3"}
+	for _, d := range directories {
+		if err := os.Mkdir(filepath.Join(tmpDir, d), 0755); err != nil {
+			t.Fatalf("failed to create directory %s: %v", d, err)
+		}
+	}
+	files := []string{"file1.txt", "file2.txt", "file3.txt"}
+	for _, f := range files {
+		if _, err := os.Create(filepath.Join(tmpDir, f)); err != nil {
+			t.Fatalf("failed to create file %s: %v", f, err)
+		}
+	}
+
+	// Call ListFile and check the result.
+	listedFiles, err := ListFile(tmpDir)
+	if err != nil {
+		t.Fatalf("expected no error, but got: %v", err)
+	}
+	if len(listedFiles) != len(files) {
+		t.Fatalf("expected %d files, but got %d", len(files), len(listedFiles))
+	}
+
+	// Verify that the correct files were listed.
+	for _, f := range files {
+		found := false
+		for _, listedFile := range listedFiles {
+			if listedFile == f {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected file %s to be listed, but it was not", f)
+		}
+	}
+}
